@@ -1,4 +1,4 @@
-# 管理与 OTC 设备的 WebSocket 通信。
+# 管理与 OTC 设备的 WebSocket 通信
 import asyncio
 import json
 import websockets
