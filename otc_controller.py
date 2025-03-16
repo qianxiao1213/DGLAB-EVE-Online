@@ -78,8 +78,8 @@ class OTCController:
         response = await self.websocket.recv()
         data = json.loads(response)
         if data.get("type") == "max_intensity":
-            self.config["A_max"] = data.get("A_max", 80)
-            self.config["B_max"] = data.get("B_max", 50)
+            self.config["A_max"] = data.get("A_max", 30)
+            self.config["B_max"] = data.get("B_max", 30)
             if self.config["channel"] == "A":
                 self.config["app_max_intensity"] = self.config["A_max"]
             elif self.config["channel"] == "B":
