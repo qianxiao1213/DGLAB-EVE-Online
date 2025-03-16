@@ -299,8 +299,8 @@ class MainWindow(QMainWindow):
         current_index = 0
         while self.running and self.config["waveform_enabled"]:
             intensity_percent = self.intensity_calculator.update_intensity()
-            a_max = self.config.get("A_max", 80)
-            b_max = self.config.get("B_max", 50)
+            a_max = self.config.get("A_max", 30)
+            b_max = self.config.get("B_max", 30)
             
             if self.config["channel"] == "both":
                 a_intensity = min(int(intensity_percent * a_max / 100), a_max)
