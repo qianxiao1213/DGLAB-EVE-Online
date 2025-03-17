@@ -1,24 +1,17 @@
 import json
 import os
-import sys
 
 CONFIG_FILE = "otc_config.json"
-
-def get_resource_path(relative_path):
-    """获取打包后的资源路径"""
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS, relative_path)
-    return os.path.join(os.path.abspath("."), relative_path)
 
 def load_config():
     default_config = {
         "ws": "ws://192.168.8.129:60536/1",
-        "log_dir": r"C:\Users\用户名\Documents\EVE\logs\Gamelogs",
+        "log_dir": r"C:\Users\lebvoDocuments\EVE\logs\Gamelogs",
         "listener_id": "你的ID",
         "base_intensity": 30,
-        "app_max_intensity": 30,
-        "A_max": 30,
-        "B_max": 30,
+        "app_max_intensity": 50,  # 默认值，动态更新
+        "A_max": 80,
+        "B_max": 50,
         "damage_types": {
             "强力一击": 10, "命中": 8, "穿透": 10, "擦过": 5, "轻轻擦过": 5, "完全没有打中你": 5
         },
@@ -31,14 +24,12 @@ def load_config():
         "ticks": 10,
         "history_ids": []
     }
-    config_path = get_resource_path(CONFIG_FILE)
-    if os.path.exists(config_path):
-        with open(config_path, "r", encoding="utf-8") as f:
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             loaded_config = json.load(f)
             default_config.update(loaded_config)
     return default_config
 
 def save_config(config):
-    config_path = get_resource_path(CONFIG_FILE)
-    with open(config_path, "w", encoding="utf-8") as f:
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=4)
