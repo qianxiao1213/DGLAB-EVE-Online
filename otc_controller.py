@@ -1,4 +1,3 @@
-# 管理与 OTC 设备的 WebSocket 通信
 import asyncio
 import json
 import websockets
@@ -34,39 +33,35 @@ class OTCController:
         print(final_msg)
         return False
 
-    async def send_waveform(self, intensity_percent, ticks, pattern_name, channel):
+    async def send_waveform(self, intensity, ticks, pattern_name, channel):
         if not self.websocket:
             print("WebSocket 未连接")
             return
 
-        intensity_percent = min(intensity_percent, 100)
-        a_max = self.config.get("A_max", 30)
-        b_max = self.config.get("B_max", 30)
-        
+        app_max = self.config["app_max_intensity"]  # 例如40
+        intensity_percent = min((intensity / app_max) * 100, 100)  # 转换为百分比，例如75%
+        actual_intensity = min(intensity, app_max)  # 实际强度，用于日志显示
+
         if channel == "both":
-            a_intensity = int(intensity_percent * a_max / 100)
-            b_intensity = int(intensity_percent * b_max / 100)
             cmd = {
                 "cmd": "set_pattern",
                 "A_pattern_name": pattern_name,
                 "B_pattern_name": pattern_name,
-                "A_intensity": min(a_intensity, a_max),
-                "B_intensity": min(b_intensity, b_max),
+                "A_intensity": int(intensity_percent),  # 直接发送百分比值
+                "B_intensity": int(intensity_percent),
                 "A_ticks": ticks,
                 "B_ticks": ticks
             }
         else:
-            max_intensity = a_max if channel == "A" else b_max
-            intensity = int(intensity_percent * max_intensity / 100)
             cmd = {
                 "cmd": "set_pattern",
                 f"{channel}_pattern_name": pattern_name,
-                f"{channel}_intensity": min(intensity, max_intensity),
+                f"{channel}_intensity": int(intensity_percent),  # 直接发送百分比值
                 f"{channel}_ticks": ticks
             }
 
         await self.websocket.send(json.dumps(cmd))
-        print(f"发送指令: {cmd}")
+        print(f"发送指令: {cmd}, 实际强度={actual_intensity}, 百分比={intensity_percent:.1f}%")
 
     async def get_max_intensity(self):
         if not self.websocket:
@@ -84,7 +79,7 @@ class OTCController:
                 self.config["app_max_intensity"] = self.config["A_max"]
             elif self.config["channel"] == "B":
                 self.config["app_max_intensity"] = self.config["B_max"]
-            else:
+            else:  # "both"
                 self.config["app_max_intensity"] = min(self.config["A_max"], self.config["B_max"])
             print(f"获取到 App 上限: A_max={self.config['A_max']}, B_max={self.config['B_max']}, 选择: {self.config['app_max_intensity']}")
         else:
