@@ -1,4 +1,3 @@
-# 程序主界面
 import sys
 import asyncio
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -45,7 +44,7 @@ class MainWindow(QMainWindow):
         ws_layout = QHBoxLayout()
         ws_layout.addWidget(QLabel("WebSocket 地址:"))
         self.ws_input = QLineEdit(self.config["ws"].replace("ws://", "").replace(":60536/1", ""))
-        self.ws_input.textChanged.connect(self.update_config)  # 文本改变时更新配置
+        self.ws_input.textChanged.connect(self.update_config)
         ws_layout.addWidget(self.ws_input)
         self.connect_button = QPushButton("连接 OTC")
         self.connect_button.clicked.connect(self.connect_otc)
@@ -73,7 +72,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.listener_id_input)
 
         # 基础强度
-        layout.addWidget(QLabel("基础强度 (%):"))
+        layout.addWidget(QLabel("基础强度:"))
         self.base_intensity_input = QLineEdit(str(self.config["base_intensity"]))
         self.base_intensity_input.textChanged.connect(self.update_base_intensity)
         layout.addWidget(self.base_intensity_input)
@@ -89,9 +88,9 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.base_intensity_b_label)
 
         # A 和 B 动态强度
-        self.dynamic_intensity_a_label = QLabel(f"A 动态强度: {self.config['base_intensity']}%")
+        self.dynamic_intensity_a_label = QLabel(f"A 动态强度: {self.config['base_intensity']}")
         layout.addWidget(self.dynamic_intensity_a_label)
-        self.dynamic_intensity_b_label = QLabel(f"B 动态强度: {self.config['base_intensity']}%")
+        self.dynamic_intensity_b_label = QLabel(f"B 动态强度: {self.config['base_intensity']}")
         layout.addWidget(self.dynamic_intensity_b_label)
 
         # 选择监控的攻击类型
@@ -168,7 +167,6 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage("程序初始化完成")
 
     def update_config(self):
-        """通用配置更新函数"""
         try:
             self.config["ws"] = f"ws://{self.ws_input.text().strip()}:60536/1"
             self.config["log_dir"] = self.log_dir_input.text().strip()
@@ -187,21 +185,20 @@ class MainWindow(QMainWindow):
                 for i in range(self.patterns_list.count())
                 if self.patterns_list.item(i).checkState() == Qt.Checked
             ]
-            save_config(self.config)  # 自动保存
+            save_config(self.config)
             self.status_bar.showMessage("配置已自动更新并保存")
         except Exception as e:
             self.status_bar.showMessage(f"配置更新失败: {e}")
 
     def update_base_intensity(self, text):
-        """更新基础强度"""
         try:
             intensity = int(text)
             self.config["base_intensity"] = intensity
             self.intensity_calculator.current_intensity = intensity
             self.base_intensity_a_label.setText(f"A 基础强度: {intensity}")
             self.base_intensity_b_label.setText(f"B 基础强度: {intensity}")
-            self.dynamic_intensity_a_label.setText(f"A 动态强度: {intensity}%")
-            self.dynamic_intensity_b_label.setText(f"B 动态强度: {intensity}%")
+            self.dynamic_intensity_a_label.setText(f"A 动态强度: {intensity}")
+            self.dynamic_intensity_b_label.setText(f"B 动态强度: {intensity}")
             self.validate_base_intensity()
             save_config(self.config)
             self.status_bar.showMessage("基础强度已更新并保存")
@@ -209,7 +206,6 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage("基础强度必须为整数")
 
     def update_damage_intensity(self, key, text):
-        """更新攻击类型强度"""
         try:
             self.config["damage_types"][key] = int(text)
             save_config(self.config)
@@ -218,7 +214,6 @@ class MainWindow(QMainWindow):
             self.status_bar.showMessage(f"{key} 强度必须为整数")
 
     def update_channel(self, channel):
-        """更新通道选择"""
         self.config["channel"] = channel
         self.update_max_intensity_display()
         save_config(self.config)
@@ -232,6 +227,7 @@ class MainWindow(QMainWindow):
         success = await self.otc_controller.connect(retries=3, delay=2, log_callback=log_to_waveform)
         if success:
             await self.otc_controller.get_max_intensity()
+            print(f"连接后: app_max_intensity={self.config['app_max_intensity']}, A_max={self.config.get('A_max')}, B_max={self.config.get('B_max')}")
             self.config["max_intensity"] = self.config["app_max_intensity"]
             self.update_max_intensity_display()
             self.validate_base_intensity()
@@ -250,8 +246,8 @@ class MainWindow(QMainWindow):
         self.disconnect_button.setEnabled(False)
         self.status_bar.showMessage("OTC 控制器已断开")
         self.intensity_calculator.current_intensity = self.config["base_intensity"]
-        self.dynamic_intensity_a_label.setText(f"A 动态强度: {self.config['base_intensity']}%")
-        self.dynamic_intensity_b_label.setText(f"B 动态强度: {self.config['base_intensity']}%")
+        self.dynamic_intensity_a_label.setText(f"A 动态强度: {self.config['base_intensity']}")
+        self.dynamic_intensity_b_label.setText(f"B 动态强度: {self.config['base_intensity']}")
 
     def handle_event(self, event):
         self.intensity_calculator.add_event(event)
@@ -280,8 +276,8 @@ class MainWindow(QMainWindow):
             self.start_button.setEnabled(True)
             self.stop_button.setEnabled(False)
             self.intensity_calculator.current_intensity = self.config["base_intensity"]
-            self.dynamic_intensity_a_label.setText(f"A 动态强度: {self.config['base_intensity']}%")
-            self.dynamic_intensity_b_label.setText(f"B 动态强度: {self.config['base_intensity']}%")
+            self.dynamic_intensity_a_label.setText(f"A 动态强度: {self.config['base_intensity']}")
+            self.dynamic_intensity_b_label.setText(f"B 动态强度: {self.config['base_intensity']}")
             self.status_bar.showMessage("程序已关闭")
 
     def start_log_monitor(self):
@@ -298,38 +294,35 @@ class MainWindow(QMainWindow):
     async def waveform_loop(self):
         current_index = 0
         while self.running and self.config["waveform_enabled"]:
-            intensity_percent = self.intensity_calculator.update_intensity()
+            intensity = self.intensity_calculator.update_intensity()  # 获取实际强度，例如30
+            app_max = self.config["app_max_intensity"]  # 例如40
+            intensity_percent = min((intensity / app_max) * 100, 100)  # 计算百分比，例如75%
             a_max = self.config.get("A_max", 30)
             b_max = self.config.get("B_max", 30)
-            
+
             if self.config["channel"] == "both":
-                a_intensity = min(int(intensity_percent * a_max / 100), a_max)
-                b_intensity = min(int(intensity_percent * b_max / 100), b_max)
-                self.dynamic_intensity_a_label.setText(f"A 动态强度: {intensity_percent}% ({a_intensity}/{a_max})")
-                self.dynamic_intensity_b_label.setText(f"B 动态强度: {intensity_percent}% ({b_intensity}/{b_max})")
+                self.dynamic_intensity_a_label.setText(f"A 动态强度: {min(intensity, a_max)} ({intensity_percent:.1f}%)")
+                self.dynamic_intensity_b_label.setText(f"B 动态强度: {min(intensity, b_max)} ({intensity_percent:.1f}%)")
             elif self.config["channel"] == "A":
-                a_intensity = min(int(intensity_percent * a_max / 100), a_max)
-                self.dynamic_intensity_a_label.setText(f"A 动态强度: {intensity_percent}% ({a_intensity}/{a_max})")
-                self.dynamic_intensity_b_label.setText(f"B 动态强度: {self.config['base_intensity']}%")
+                self.dynamic_intensity_a_label.setText(f"A 动态强度: {min(intensity, a_max)} ({intensity_percent:.1f}%)")
+                self.dynamic_intensity_b_label.setText(f"B 动态强度: {self.config['base_intensity']}")
             else:  # "B"
-                b_intensity = min(int(intensity_percent * b_max / 100), b_max)
-                self.dynamic_intensity_a_label.setText(f"A 动态强度: {self.config['base_intensity']}%")
-                self.dynamic_intensity_b_label.setText(f"B 动态强度: {intensity_percent}% ({b_intensity}/{b_max})")
+                self.dynamic_intensity_a_label.setText(f"A 动态强度: {self.config['base_intensity']}")
+                self.dynamic_intensity_b_label.setText(f"B 动态强度: {min(intensity, b_max)} ({intensity_percent:.1f}%)")
 
             if self.config["selected_patterns"]:
                 pattern_name = self.config["selected_patterns"][current_index % len(self.config["selected_patterns"])]
                 current_index += 1
             else:
                 pattern_name = "经典"
-            await self.otc_controller.send_waveform(intensity_percent, self.config["ticks"], pattern_name, self.config["channel"])
-            self.waveform_log.append(f"发送波形: 强度={intensity_percent}%, 波形={pattern_name}")
+            await self.otc_controller.send_waveform(intensity, self.config["ticks"], pattern_name, self.config["channel"])
+            self.waveform_log.append(f"发送波形: 强度={intensity}, 百分比={intensity_percent:.1f}%, 波形={pattern_name}")
             await asyncio.sleep(1)
 
     def validate_base_intensity(self):
-        base_intensity_value = int(self.config["base_intensity"] * self.config["app_max_intensity"] / 100)
-        if base_intensity_value > self.config["app_max_intensity"]:
+        if self.config["base_intensity"] > self.config["app_max_intensity"]:
             QMessageBox.warning(self, "警告",
-                f"基础强度 ({base_intensity_value}) 超过 App 强度上限 ({self.config['app_max_intensity']})，请调整基础强度或上限！")
+                                f"基础强度 ({self.config['base_intensity']}) 超过 App 强度上限 ({self.config['app_max_intensity']})，请调整基础强度或上限！")
 
     def update_max_intensity_display(self):
         if self.config["channel"] == "A":
