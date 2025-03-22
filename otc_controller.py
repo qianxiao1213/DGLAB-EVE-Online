@@ -1,3 +1,4 @@
+#	管理与 OTC 设备的 WebSocket 通信
 import asyncio
 import json
 import websockets
@@ -38,8 +39,8 @@ class OTCController:
             print("WebSocket 未连接")
             return
 
-        app_max = self.config["app_max_intensity"]  # 例如40
-        intensity_percent = min((intensity / app_max) * 100, 100)  # 转换为百分比，例如75%
+        app_max = self.config["app_max_intensity"]  # 使用实际获取的上限
+        intensity_percent = min((intensity / app_max) * 100, 100)  # 转换为百分比
         actual_intensity = min(intensity, app_max)  # 实际强度，用于日志显示
 
         if channel == "both":
@@ -61,7 +62,7 @@ class OTCController:
             }
 
         await self.websocket.send(json.dumps(cmd))
-        print(f"发送指令: {cmd}, 实际强度={actual_intensity}, 百分比={intensity_percent:.1f}%")
+        print(f"发送指令: {cmd}, 实际强度={actual_intensity}, 百分比={intensity_percent:.1f}%, app_max={app_max}")
 
     async def get_max_intensity(self):
         if not self.websocket:
