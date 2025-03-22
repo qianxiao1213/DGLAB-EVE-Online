@@ -1,34 +1,58 @@
-import time
-
 class IntensityCalculator:
     def __init__(self, config):
         self.config = config
-        self.current_intensity = config["base_intensity"]
-        self.damage_buffer = []
-        self.attack_buffer = []
-        self.special_buffer = []
-        self.last_update_time = time.time()
+        self.base_intensity = config.get("base_intensity", 0)
+        self.current_intensity = self.base_intensity
+        self.max_intensity_a = config.get("A_max", 30)
+        self.max_intensity_b = config.get("B_max", 30)
+        self.app_max_intensity = config.get("app_max_intensity", 30)
+        self.events = []
+        self.total_increment = 0
+        self.total_decrement = 0
+        self.decay_rate = 0.9  # 每次更新时衰减 10%
 
     def add_event(self, event):
-        print(f"收到事件: {event}")
-        if event["type"] == "damage" and event["subtype"] in self.config["monitored_damage_types"]:
-            self.damage_buffer.append(event["subtype"])
+        try:
+            if not isinstance(event, dict) or 'type' not in event or 'subtype' not in event:
+                print(f"无效的事件格式: {event}")
+                return
+            self.events.append(event)
+            # 重置单次增量和减量，只基于当前事件计算
+            increment = 0
+            decrement = 0
+            if event["type"] == "damage" and event["subtype"] in self.config["monitored_damage_types"]:
+                increment = self.config.get("damage_types", {}).get(event["subtype"], 0)
+                increment = min(99, increment)  # 限制单次增量不超过 99
+                print(f"强度增加: {event['subtype']} (+{increment})")
+            elif event["type"] == "player_attack" and event["subtype"] in self.config["monitored_reward_types"]:
+                decrement = self.config.get("reward_types", {}).get(event["subtype"], 0)
+                decrement = min(99, decrement)  # 限制单次减量不超过 99
+                print(f"强度减少: {event['subtype']} (-{decrement})")
+
+            # 累加本次事件的增量和减量，并应用衰减
+            self.total_increment = min(99, max(0, self.total_increment * self.decay_rate + increment))
+            self.total_decrement = min(99, max(0, self.total_decrement * self.decay_rate + decrement))
+            self.update_intensity()
+        except Exception as e:
+            print(f"处理事件时出错: {e}")
 
     def update_intensity(self):
-        current_time = time.time()
-        if current_time - self.last_update_time >= 1:
-            if self.damage_buffer:
-                damage_increase = sum(
-                    self.config["damage_types"].get(dt, 0)
-                    for dt in self.damage_buffer
-                )
-                print(f"计算强度增加: {damage_increase}, 当前缓冲区: {self.damage_buffer}")
-                self.current_intensity = self.config["base_intensity"] + damage_increase
-                self.current_intensity = max(self.config["min_intensity"],
-                                           min(self.current_intensity, 100))
-                self.damage_buffer.clear()
-            else:
-                self.current_intensity = self.config["base_intensity"]
-                print("无新事件，恢复基础强度")
-            self.last_update_time = current_time
-        return int(self.current_intensity)
+        try:
+            # 计算当前强度，确保不小于 0
+            raw_intensity = self.base_intensity + self.total_increment - self.total_decrement
+            self.current_intensity = max(0, min(raw_intensity, self.app_max_intensity))  # 限制在 [0, app_max_intensity]
+            print(
+                f"计算强度: 基础={self.base_intensity}, 增量={self.total_increment:.1f}, 减量={self.total_decrement:.1f}, 总和={self.current_intensity}")
+            return self.current_intensity
+        except Exception as e:
+            print(f"更新强度时出错: {e}")
+            return self.current_intensity
+
+    def reset(self):
+        try:
+            self.current_intensity = self.base_intensity
+            self.total_increment = 0
+            self.total_decrement = 0
+            self.events = []
+        except Exception as e:
+            print(f"重置时出错: {e}")
